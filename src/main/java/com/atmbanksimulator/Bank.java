@@ -112,4 +112,8 @@ public class Bank {
             return -1; // use -1 as an indicator of an error
         }
     }
+    //Checks which account type is logged in (Savings, Prime, Current or Student)
+    public BankAccount getLoggedInAccount() {
+        return loggedInAccount;
+    }
 }

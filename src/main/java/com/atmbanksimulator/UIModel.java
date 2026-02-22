@@ -17,9 +17,11 @@ public class UIModel {
     // 3. Logged in (ready to process requests for the logged-in account)
     // We represent each state with a String constant.
     // The 'final' keyword ensures these values cannot be changed.
+    // 4. Ensures interest is not applied to any account until the check has been performed.
     private final String STATE_ACCOUNT_NO = "account_no";
     private final String STATE_PASSWORD = "password";
     private final String STATE_LOGGED_IN = "logged_in";
+    private boolean interestApplied = false;
 
     // Variables representing the state and data of the ATM UIModel
     private String state = STATE_ACCOUNT_NO;    // Current state of the ATM
@@ -175,14 +177,25 @@ public class UIModel {
     // - Otherwise, reset the ATM and display an error message
     public void processBalance() {
         if (state.equals(STATE_LOGGED_IN) ) {
+            BankAccount current = bank.getLoggedInAccount();
             numberPadInput = "";
-            message = "Balance Available";
-            result = "Your Balance is: " + bank.getBalance();
+
+            //Checks if the account is a SavingsAccount
+            if (current instanceof SavingsAccount && !interestApplied) {
+                ((SavingsAccount) current).addInterest();
+                interestApplied = true; //Flag to prevent balance spam resulting in infinite interest applied
+                message = "Interest applied";
+            } else {
+                message = "Balance available";
+            }
+            result = "Your balance is: £" + current.getBalance();
         } else {
-            reset("You are not logged in");
+            reset ("You are not logged in");
         }
         update();
-    }
+        }
+
+
 
     // Handle the Withdraw button:
     // If the user is logged in, attempt to withdraw the amount entered;
@@ -197,8 +210,17 @@ public class UIModel {
                     result = "Withdrawn: " + numberPadInput;
                 }
                 else{
-                    message = "Withdraw Failed: Insufficient Funds";
-                    result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)";
+                    //Checks which account is logged in to choose which error message displays.
+                    message = "Withdraw Failed";
+                    BankAccount current = bank.getLoggedInAccount();
+
+                    if (current instanceof StudentAccount && amount > 50) {
+                        result = "Error: Student limit is £50 per transaction.";
+                    } else if (current instanceof PrimeAccount) {
+                        result = "Error: Amount exceeds your overdraft limit.";
+                    } else {
+                        result = "Error: Insufficient Funds.";
+                    }
                 }
             }
             else{
@@ -226,7 +248,7 @@ public class UIModel {
                 result = "Deposited: " + numberPadInput;
             }
             else {
-                message = "Invaild Amount";
+                message = "Invalid Amount";
                 result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)";
             }
             numberPadInput = "";
@@ -242,6 +264,7 @@ public class UIModel {
     // - Otherwise, reset the ATM and display an error message
     public void processFinish() {
         if (state.equals(STATE_LOGGED_IN) ) {
+            interestApplied = false; //Reset flag if user relogs to another account
             reset("Thank you for using the Bank ATM");
             bank.logout();
         } else {
