@@ -1,6 +1,7 @@
 package com.atmbanksimulator;
 
 import javafx.event.ActionEvent;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -25,6 +26,9 @@ class View {
     private ScrollPane scrollPane; // Provides scrollbars around the TextArea
     private GridPane grid;      // Main layout container (grid-based)
     private TilePane buttonPane;// Container for ATM keypad buttons (tiled layout)
+    private VBox welcomeLayout; //Container for initial welcome screen buttons
+    private VBox goodbyeLayout; //Container for goodbye screen
+    private StackPane root; // The container that stacks the welcome screen and ATM keypad
 
     // start() is called from Main to set up the UI.
     // Important: create controls here (not in the constructor or as field initializers),
@@ -38,8 +42,33 @@ class View {
         // 4. A tiled panel of buttons
         grid = new GridPane(); // top layout
         grid.setId("Layout");  // assign an id to be used in css file
+
+        //Setup welcome layout: so the users sees this first.
+        //Uses VBox to stack the title and buttons vertically in the center.
+        welcomeLayout = new VBox(20);
+        welcomeLayout.setAlignment(Pos.CENTER);
+
         buttonPane = new TilePane(); //
         buttonPane.setId("Buttons"); // assign an id to be used in css file
+
+        Label welcomeLbl = new Label("Welcome to Bank Simulator");
+        Button loginButton = new Button("Login to Account");
+        Button createAccButton = new Button("Create Account");
+
+        loginButton.setOnAction((e) -> controller.process("LoginButton"));
+        createAccButton.setOnAction((e) -> controller.process("CreateAccButton"));
+
+        welcomeLayout.getChildren().addAll(welcomeLbl, loginButton, createAccButton);
+
+        goodbyeLayout = new VBox(20);
+        goodbyeLayout.setAlignment(Pos.CENTER);
+        Label goodbyeLbl = new Label("Logged Out Successfully");
+        Button returnBtn = new Button("Return to home");
+
+        returnBtn.setOnAction((e) -> controller.process("ReturnToWelcome"));
+
+        goodbyeLayout.getChildren().addAll(goodbyeLbl, returnBtn);
+
 
         // controls
         laMsg = new Label("Welcome to Bank-ATM");  // Message bar at the top
@@ -83,10 +112,13 @@ class View {
             }
         }
         grid.add(buttonPane,0,3); // add the tiled pane of buttons to the main grid
+        //Allows stacking of the grid so we can toggle their visibility without opening new windows (already preloaded)
+        root = new StackPane(grid, welcomeLayout, goodbyeLayout);
+
+        Scene scene = new Scene(root, W, H);
+        scene.getStylesheets().add("atm.css"); // tell to use our css file
 
         // add the complete GUI to the window and display it
-        Scene scene = new Scene(grid, W, H);
-        scene.getStylesheets().add("atm.css"); // tell to use our css file
         window.setScene(scene);
         window.setTitle("ATM-Bank Simulator"); //set window title
         window.show();
@@ -108,8 +140,20 @@ class View {
     // - msg → shown in the top message label
     // - tfInputMsg → shown in the text field (user input area)
     // - taResultMsg → shown in the text area (instructions / results)
-    public void update(String msg,String tfInputMsg,String taResultMsg)
-    {
+    public void update(String msg,String tfInputMsg,String taResultMsg) {
+
+        welcomeLayout.setVisible(false);
+        goodbyeLayout.setVisible(false);
+        grid.setVisible(false);
+
+        //State-based UI toggling
+        if (msg.toLowerCase().contains("welcome")) {
+            welcomeLayout.setVisible(true);
+        } else if (msg.toLowerCase().contains("goodbye")) {
+            goodbyeLayout.setVisible(true);
+        } else {
+            grid.setVisible(true);
+        }
         laMsg.setText(msg);
         tfInput.setText(tfInputMsg);
         taResult.setText(taResultMsg);

@@ -13,6 +13,15 @@ public class Controller {
     // and delegates the task accordingly.
     void process( String action ) {
         switch (action) {
+            case "LoginButton": //Button for user Login
+                UIModel.processLoginChoice();
+                break;
+            case "CreateAccButton": //Button for user Account creation
+                UIModel.processCreateAccChoice();
+                break;
+            case "ReturnToWelcome":
+                UIModel.initialise();
+                break;
             case "1" : case "2" : case "3" : case "4" : case "5" :
             case "6" : case "7" : case "8" : case "9" : case "0" :
                 UIModel.processNumber(action);

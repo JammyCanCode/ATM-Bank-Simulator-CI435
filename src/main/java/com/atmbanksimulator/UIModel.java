@@ -21,10 +21,13 @@ public class UIModel {
     // The 'final' keyword ensures these values cannot be changed.
     // 4. Ensures interest is not applied to any account until the check has been performed.
     // 5. Waiting for an amount of money to transfer to a selected account
+    // 6. New initial entry point for the application
     private final String STATE_ACCOUNT_NO = "account_no";
     private final String STATE_PASSWORD = "password";
     private final String STATE_LOGGED_IN = "logged_in";
     private final String STATE_TRANS_MONEY = "trans_money";
+    private final String STATE_WELCOME = "welcome";
+    private final String STATE_GOODBYE = "goodbye";
 
     // Change-password states
     private final String STATE_PW_OLD     = "pw_old";
@@ -56,14 +59,30 @@ public class UIModel {
     }
 
     // Initialize the ATM UIModel: this method is called by Main when starting the app
-    // - Set state to STATE_ACCOUNT_NO
+    // - Set state to STATE_ACCOUNT_NO - Changed 01/03/2026 to use new welcome page (STATE_WELCOME)
     // - Clear the numberPadInput - numbers displayed in the TextField
     // - Display the welcome message and user instructions
     public void initialise() {
+        setState(STATE_WELCOME);
+        message = "Welcome to the ATM";
+        result = "Please select an option to begin.";
+        update();
+    }
+    //Handle the transition between the welcome screen and the login screen.
+    public void processLoginChoice() {
         setState(STATE_ACCOUNT_NO);
         numberPadInput = "";
-        message = "Welcome to the ATM";
-        result = "Enter your account number\nFollowed by \"Ent\"";
+        message = "Login";
+        result = "Enter your account number\nFollowed by \"Password\"";
+        update();
+    }
+
+    public void processCreateAccChoice() {
+        //setState(STATE_CREATE_ACC); //For future account creation
+        numberPadInput = "";
+        message = "Register new Account";
+        result = "Feature coming soon!\n Returning to Welcome..."; //Will add once Clay finishes the account
+                                                                    // creation feature
         update();
     }
 
@@ -447,14 +466,16 @@ public class UIModel {
     // - If the user is logged in, log out
     // - Otherwise, reset the ATM and display an error message
     public void processFinish() {
-        if (state.equals(STATE_LOGGED_IN) ) {
-            interestApplied = false; //Reset flag if user relogs to another account
-            reset("Thank you for using the Bank ATM");
-            bank.logout();
-        } else {
-            reset("You are not logged in");
-        }
+        bank.logout();
+        setState(STATE_GOODBYE);
+        numberPadInput = ""; //Resets buffer so user cannot see previous user's balance or input
+        message = "Goodbye";
+        result = "Thank you for using our ATM.";
         update();
+        //Returns user to home automatically
+        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(5));
+        delay.setOnFinished(event -> initialise());
+        delay.play();
     }
 
     // Handle unknown or invalid buttons for the current state:
