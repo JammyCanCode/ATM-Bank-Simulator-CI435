@@ -10,7 +10,7 @@ public class StudentAccount extends BankAccount{
     @Override
     public boolean withdraw(int amount) {
         if (amount > 50) {
-        return false; //Prevents withdrawals from the acc that exceed £50
+            return false; //Prevents withdrawals from the acc that exceed £50
         } return super.withdraw(amount);
     }
 }

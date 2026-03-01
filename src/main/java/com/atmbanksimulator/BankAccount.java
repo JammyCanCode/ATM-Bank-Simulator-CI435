@@ -53,4 +53,10 @@ public class BankAccount {
     public String getaccPasswd() {
         return accPasswd;
     }
+
+    // ✅ Setter for password (needed for Change Password feature)
+    public void setAccPasswd(String newPasswd) {
+        this.accPasswd = newPasswd;
+    }
 }
+

@@ -2,6 +2,8 @@ package com.atmbanksimulator;
 
 // ===== 🧠 UIModel (Brain) =====
 
+import java.util.Objects;
+
 // The UIModel represents all the actual content and functionality of the app
 // For the ATM, it keeps track of the information shown in the display
 // (the laMsg and two tfInput boxes), and the interaction with the bank, executes
@@ -18,15 +20,30 @@ public class UIModel {
     // We represent each state with a String constant.
     // The 'final' keyword ensures these values cannot be changed.
     // 4. Ensures interest is not applied to any account until the check has been performed.
+    // 5. Waiting for an amount of money to transfer to a selected account
     private final String STATE_ACCOUNT_NO = "account_no";
     private final String STATE_PASSWORD = "password";
     private final String STATE_LOGGED_IN = "logged_in";
+    private final String STATE_TRANS_MONEY = "trans_money";
+
+    // Change-password states
+    private final String STATE_PW_OLD     = "pw_old";
+    private final String STATE_PW_NEW     = "pw_new";
+    private final String STATE_PW_CONFIRM = "pw_confirm";
+
+    // Interest flag (savings)
     private boolean interestApplied = false;
 
     // Variables representing the state and data of the ATM UIModel
     private String state = STATE_ACCOUNT_NO;    // Current state of the ATM
-    private String accNumber = "";         // Account number being typed
-    private String accPasswd = "";         // Password being typed
+    private String accNumber = "";              // Account number being typed
+    private String accPasswd = "";              // Password being typed
+    private int attempts = 0;                   // Amount of wrong login attempts
+    private String transAccNumber = "";         // Account number of account being transferred to
+
+    // Change-password working vars
+    private String pendingNewPassword = "";
+    private int pwAttempts = 0;
 
     // Variables shown on the View display
     private String message;                // Message label text
@@ -125,22 +142,133 @@ public class UIModel {
                 break;
 
             case STATE_PASSWORD:
-                    // Waiting for a password
-                    // Save the typed number as accPasswd, clear numberPadInput,
-                    // then contact the bank to attempt login
+                // Waiting for a password
+                // Save the typed number as accPasswd, clear numberPadInput,
+                // then contact the bank to attempt login
                 accPasswd = numberPadInput;
                 numberPadInput = "";
-                if ( bank.login(accNumber, accPasswd) )
-                {
-                    // Successful login: change state to STATE_LOGGED_IN and provide instructions
+
+                //TODO I KNOW THIS CODE LOOKS AND IS HORRIBLE, WILL FIX LATER - adrian
+                //checks if more than 3 attempts have been made
+                if (attempts < 3) {
+                    if (bank.login(accNumber, accPasswd)) {
+                        // Successful login: change state to STATE_LOGGED_IN and provide instructions
+                        setState(STATE_LOGGED_IN);
+                        message = "Logged In";
+                        result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)" +
+                                "\nOr enter the account number\nTo transfer to\n(Xfr = Transfer)";
+                        attempts = 0; //resets attempts counter
+                    } else {
+                        // Login failed: reset ATM and display error
+                        // Check if 3 attempts made, if so, reset
+                        if (attempts < 2) {
+                            attempts++;
+                            message = "Login failed: Remaining attempts = " + (3-attempts);
+                            result = "Incorrect Account Number or password\nNow enter your password\n" +
+                                    "Followed by \"Ent\"\naccount number=" + accNumber;
+                        } else {
+                            message = "Login Failed: Reset";
+                            bank.logout();
+                            attempts = 0;
+                            reset(message);
+                        }
+                    }
+                }
+                break;
+
+            // ===== Change Password flow =====
+
+            case STATE_PW_OLD: {
+                String oldPw = numberPadInput;
+                numberPadInput = "";
+
+                if (bank.verifyLoggedInPassword(oldPw)) {
+                    setState(STATE_PW_NEW);
+                    message = "Old password verified";
+                    result = "Enter your NEW password (5 digits)\nFollowed by \"Ent\"";
+                } else {
+                    pwAttempts++;
+                    if (pwAttempts >= 3) {
+                        bank.logout();
+                        interestApplied = false;
+                        reset("Password check failed: Logged out");
+                    } else {
+                        message = "Incorrect password";
+                        result = "Try again (" + (3 - pwAttempts) + " attempts left)\nEnter CURRENT password\nFollowed by \"Ent\"";
+                        setState(STATE_PW_OLD);
+                    }
+                }
+                break;
+            }
+
+            case STATE_PW_NEW: {
+                String newPw = numberPadInput;
+                numberPadInput = "";
+
+                String oldPw = bank.getLoggedInAccount().getaccPasswd();
+                String err = validateNewPassword(oldPw, newPw);
+
+                if (err == null) {
+                    pendingNewPassword = newPw;
+                    setState(STATE_PW_CONFIRM);
+                    message = "Confirm new password";
+                    result = "Re-enter your NEW password\nFollowed by \"Ent\"";
+                } else {
+                    message = "New password rejected";
+                    result = err + "\nEnter a NEW password\nFollowed by \"Ent\"";
+                    setState(STATE_PW_NEW);
+                }
+                break;
+            }
+
+            case STATE_PW_CONFIRM: {
+                String confirm = numberPadInput;
+                numberPadInput = "";
+
+                if (confirm.equals(pendingNewPassword)) {
+                    bank.changeLoggedInPassword(pendingNewPassword);
+                    pendingNewPassword = "";
                     setState(STATE_LOGGED_IN);
-                    message = "Logged In";
+                    message = "Password changed";
                     result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)";
                 } else {
-                    // Login failed: reset ATM and display error
-                    message = "Login failed: Unknown Account/Password";
-                    reset(message);
+                    message = "Passwords do not match";
+                    result = "Re-enter your NEW password\nFollowed by \"Ent\"";
+                    setState(STATE_PW_CONFIRM);
                 }
+                break;
+            }
+
+            case STATE_TRANS_MONEY:
+                //modified code from processWithdraw
+                int amount = parseValidAmount(numberPadInput);
+                if (amount > 0) {
+                    if (bank.transfer(amount, transAccNumber)) {
+
+                        message = "Transfer Successful";
+                        result = "Transferred: £" + amount + " to " + transAccNumber;
+                        setState(STATE_LOGGED_IN);
+
+                    }
+                    else {
+                        //Checks which account is logged in to choose which error message displays.
+                        message = "Transfer Failed";
+                        BankAccount current = bank.getLoggedInAccount();
+
+                        if (current instanceof StudentAccount && amount > 50) {
+                            result = "Error: Student limit is £50 per transaction.";
+                        } else if (current instanceof PrimeAccount) {
+                            result = "Error: Amount exceeds your overdraft limit.";
+                        } else if (Objects.equals(transAccNumber, accNumber)){
+                            result = "Error: Cannot transfer to own account.";
+                        } else {
+                            result = "Error: Insufficient Funds.";
+                        }
+                        setState(STATE_LOGGED_IN);
+                    }
+                }
+
+
                 break;
 
             case STATE_LOGGED_IN:
@@ -193,7 +321,7 @@ public class UIModel {
             reset ("You are not logged in");
         }
         update();
-        }
+    }
 
 
 
@@ -202,7 +330,7 @@ public class UIModel {
     // otherwise, reset the ATM and display an error message.
     // Reads the amount from numberPadInput, validates it, and updates messages/results accordingly.
     public void processWithdraw() {
-        if (state.equals(STATE_LOGGED_IN)) {
+        if (state.equals(STATE_LOGGED_IN) || state.equals(STATE_TRANS_MONEY)) {
             int amount = parseValidAmount(numberPadInput);
             if (amount > 0) {
                 if(bank.withdraw( amount )){
@@ -225,7 +353,8 @@ public class UIModel {
             }
             else{
                 message = "Invalid Amount";
-                result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)";
+                result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)" +
+                        "\nOr enter the account number\nTo transfer to\n(Xfr = Transfer)";
             }
             numberPadInput = "";
         }
@@ -249,9 +378,64 @@ public class UIModel {
             }
             else {
                 message = "Invalid Amount";
-                result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)";
+                result = "Now enter the amount\nThen press transaction\n(Dep = Deposit, W/D = Withdraw)" +
+                        "\nOr enter the account number\nTo transfer to\n(Xfr = Transfer)";
             }
             numberPadInput = "";
+        }
+        else {
+            reset("You are not logged in");
+        }
+        update();
+    }
+
+    // ✅ Change Password button handler
+    public void processChangePassword() {
+        if (!state.equals(STATE_LOGGED_IN)) {
+            reset("You are not logged in");
+            update();
+            return;
+        }
+
+        numberPadInput = "";
+        pendingNewPassword = "";
+        pwAttempts = 0;
+        setState(STATE_PW_OLD);
+        message = "Change Password";
+        result = "Enter your CURRENT password\nFollowed by \"Ent\"";
+        update();
+    }
+
+    private String validateNewPassword(String oldPw, String newPw) {
+        if (newPw == null || newPw.isEmpty()) return "Password cannot be empty.";
+        if (!newPw.matches("\\d+")) return "Password must be numbers only.";
+        if (newPw.length() != 5) return "Password must be exactly 5 digits.";
+        if (newPw.equals(oldPw)) return "New password cannot match old password.";
+        if (newPw.matches("0+")) return "Password cannot be all zeros.";
+        return null;
+    }
+
+    //Handle the Xfer button:
+    // - if the user is logged in, check if the value entered is a valid account number
+    // - if so, set state to transfer money in, otherwise reject and set state to logged in
+    public void processTransfer() {
+        if (state.equals(STATE_LOGGED_IN) || state.equals(STATE_TRANS_MONEY)) {
+            int count = bank.getAccountCount();
+            String[] accountNumbers = bank.getAccountNumbers();
+            for (int i = 0; i < count; i++) {
+                //check if the number pad input is one of the account numbers
+                if (numberPadInput.equals(accountNumbers[i])) {
+                    transAccNumber = numberPadInput;
+                    message = "Transfer to: " + transAccNumber;
+                    result = "Enter how much you wish to send\nThen press [Ent]";
+                    setState(STATE_TRANS_MONEY);
+                    numberPadInput = "";
+                    break;
+                }
+
+                // if the account number is incorrect/not in the accounts list
+                message = "Invalid Account Number";
+            }
         }
         else {
             reset("You are not logged in");
@@ -280,9 +464,38 @@ public class UIModel {
         update();
     }
 
+    // Handle the help/? button
+    // - Reads the current state to determine position
+    // - Displays helpful message for the user in result
+    public void processHelp() {
+        message = "Help";
+        switch (state) {
+            case STATE_ACCOUNT_NO:
+                result = "Enter account number, then Ent.";
+                break;
+            case STATE_PASSWORD:
+                result = "Enter password, then Ent.";
+                break;
+            case STATE_LOGGED_IN:
+                result = "Enter amount, then Dep / W/D / Bal.\nPress Pwd to change password.\nPress Fin to logout.";
+                break;
+            case STATE_PW_OLD:
+                result = "Enter CURRENT password, then Ent.";
+                break;
+            case STATE_PW_NEW:
+                result = "Enter NEW 5-digit password, then Ent.";
+                break;
+            case STATE_PW_CONFIRM:
+                result = "Re-enter NEW password to confirm, then Ent.";
+                break;
+            default:
+                result = "Help unavailable.";
+        }
+        update();
+    }
+
     // Notify the View of changes by calling its update method
     private void update() {
         view.update(message,numberPadInput, result);
     }
 }
-

@@ -28,7 +28,7 @@ public class Bank {
     public boolean addBankAccount(BankAccount a) {
         if (numAccounts < maxAccounts) {
             accounts[numAccounts] = a;
-            numAccounts++ ;
+            numAccounts++;
             return true;
         } else {
             return false;
@@ -51,7 +51,8 @@ public class Bank {
         // Search the accounts array to find a BankAccount with a matching accountNumber and password.
         // - If found, set 'loggedInAccount' to that account and return true.
         // - If not found, reset 'loggedInAccount' to null and return false.
-        for (BankAccount b: accounts) {
+        for (int i = 0; i < numAccounts; i++) {
+            BankAccount b = accounts[i];
             if (b.getAccNumber().equals(accountNumber) && b.getaccPasswd().equals(password)) {
                 // found the right account
                 loggedInAccount = b;
@@ -63,7 +64,7 @@ public class Bank {
         return false;
     }
 
-    // Log out of the currently logged-in account, if any
+    //Log out of the currently logged-in account, if any
     public void logout() {
         if (loggedIn()) {
             loggedInAccount = null;
@@ -81,8 +82,7 @@ public class Bank {
 
     // Attempt to deposit money into the currently logged-in account
     // by calling the deposit method of the BankAccount object
-    public boolean deposit(int amount)
-    {
+    public boolean deposit(int amount) {
         if (loggedIn()) {
             return loggedInAccount.deposit(amount);
         } else {
@@ -93,8 +93,7 @@ public class Bank {
 
     // Attempt to withdraw money from the currently logged-in account
     // by calling the withdraw method of the BankAccount object
-    public boolean withdraw(int amount)
-    {
+    public boolean withdraw(int amount) {
         if (loggedIn()) {
             return loggedInAccount.withdraw(amount);
         } else {
@@ -102,18 +101,88 @@ public class Bank {
         }
     }
 
+    // Attempt to transfer money to a different account
+    // by calling the transfer method of the BankAccount object
+    public boolean transfer(int amount, String transAccNumber) {
+
+        if (!loggedIn()) {
+            return false;
+        }
+
+        //TODO get a suitable error message for transferring to yourself
+        // Prevent transferring to yourself
+        if (loggedInAccount.getAccNumber().equals(transAccNumber)) {
+            return false;
+        }
+
+        // Find target account
+        for (int i = 0; i < numAccounts; i++) {
+
+            BankAccount target = accounts[i];
+
+            if (target.getAccNumber().equals(transAccNumber)) {
+
+                // First withdraw from sender
+                if (!loggedInAccount.withdraw(amount)) {
+                    return false; // insufficient funds
+                }
+
+                // Then deposit to receiver
+                target.deposit(amount);
+
+                return true;
+            }
+        }
+
+        return false; // account not found
+    }
+
     // get the currently logged-in account balance
     // by calling the getBalance method of the BankAccount object
-    public int getBalance()
-    {
+    public int getBalance() {
         if (loggedIn()) {
             return loggedInAccount.getBalance();
         } else {
             return -1; // use -1 as an indicator of an error
         }
     }
+
     //Checks which account type is logged in (Savings, Prime, Current or Student)
     public BankAccount getLoggedInAccount() {
         return loggedInAccount;
     }
+
+    //Return the number of accounts
+    public int getAccountCount() {
+        return numAccounts;
+    }
+
+    // Returns array of account numbers
+    // - Only account numbers are returned to prevent security vulnerability from returning private account info to UIModel
+    // - And to maintain ethical and legal footing of only using data as needed
+    public String[] getAccountNumbers() {
+        String[] accountNumbers = new String[numAccounts];
+        for (int i = 0; i < numAccounts; i++) {
+            accountNumbers[i]=accounts[i].getAccNumber();
+        }
+        return accountNumbers;
+    }
+    // ===== 🔐 Change Password Support =====
+
+    // Validate the old password against the currently logged-in account
+    public boolean verifyLoggedInPassword(String oldPassword) {
+        if (!loggedIn()) return false;
+        return loggedInAccount.getaccPasswd().equals(oldPassword);
+    }
+
+    // Change the password of the currently logged-in account
+// NOTE: BankAccount must implement setAccPasswd(String)
+    public boolean changeLoggedInPassword(String newPassword) {
+        if (!loggedIn()) return false;
+        loggedInAccount.setAccPasswd(newPassword);
+        System.out.println("DEBUG: password now = " + loggedInAccount.getaccPasswd()
+                + " for acc " + loggedInAccount.getAccNumber());
+        return true;
+    }
 }
+

@@ -35,6 +35,17 @@ public class Controller {
             case "Fin":
                 UIModel.processFinish();
                 break;
+            case " ? ":
+                UIModel.processHelp();
+                break;
+            // New Transfer button
+            case "Xfr":
+                UIModel.processTransfer();
+                break;
+            // ✅ New Change Password button
+            case "Pwd":
+                UIModel.processChangePassword();
+                break;
             default:
                 UIModel.processUnknownKey(action);
                 break;
