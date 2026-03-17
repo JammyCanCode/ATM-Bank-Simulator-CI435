@@ -28,6 +28,10 @@ public class UIModel {
     private final String STATE_TRANS_MONEY = "trans_money";
     private final String STATE_WELCOME = "welcome";
     private final String STATE_GOODBYE = "goodbye";
+    private final String STATE_CREATE_ACC_NO = "create_acc_no";
+    private final String STATE_CREATE_ACC_PW = "create_acc_pwd";
+    private final String STATE_CREATE_ACC_BAL = "create_acc_bal";
+    private final String STATE_CREATE_ACC_TYPE = "create_acc_type";
 
     // Change-password states
     private final String STATE_PW_OLD     = "pw_old";
@@ -41,7 +45,11 @@ public class UIModel {
     private String state = STATE_ACCOUNT_NO;    // Current state of the ATM
     private String accNumber = "";              // Account number being typed
     private String accPasswd = "";              // Password being typed
+    private String newAccNumber = "";           //Allows new account number, pwd and type
+    private String newAccPasswd = "";
+    private String newAccType = "";
     private int attempts = 0;                   // Amount of wrong login attempts
+    private int newAccBalance = 0;              //Sets new accounts balance to 0
     private String transAccNumber = "";         // Account number of account being transferred to
 
     // Change-password working vars
@@ -78,11 +86,10 @@ public class UIModel {
     }
 
     public void processCreateAccChoice() {
-        //setState(STATE_CREATE_ACC); //For future account creation
+        setState(STATE_CREATE_ACC_NO);
         numberPadInput = "";
-        message = "Register new Account";
-        result = "Feature coming soon!\n Returning to Welcome..."; //Will add once Clay finishes the account
-                                                                    // creation feature
+        message = "Create New Account";
+        result = "Enter a 5-digit account number\nFollowed by \"Ent\"";
         update();
     }
 
@@ -157,6 +164,80 @@ public class UIModel {
                     setState(STATE_PASSWORD);
                     message = "Account Number Accepted";
                     result = "Now enter your password\nFollowed by \"Ent\"";
+                }
+                break;
+
+                //Allows account creation, limiting input to 5 digits for PW to ensure it conforms to previous PINs
+                //Also allows switching of the logic depending on type of account needed to be created (Student etc)
+            case STATE_CREATE_ACC_NO:
+                if (numberPadInput.length() == 5) {
+                    newAccNumber = numberPadInput;
+                    numberPadInput = "";
+                    setState(STATE_CREATE_ACC_PW);
+                    message = "Account Number Accepted";
+                    result = "Enter a 5-digit password\nFollowed by \"Ent\"";
+                } else {
+                    message = "Invalid Account Number";
+                    result = "Must be exactly 5 digits\nTry again";
+                }
+                break;
+
+            case STATE_CREATE_ACC_PW:
+                if (numberPadInput.length() == 5) {
+                    newAccPasswd = numberPadInput;
+                    numberPadInput = "";
+                    setState(STATE_CREATE_ACC_BAL);
+                    message = "Password Accepted";
+                    result = "Enter opening balance\nFollowed by \"Ent\"";
+                } else {
+                    message = "Invalid Password";
+                    result = "Must be exactly 5 digits\nTry again";
+                }
+                break;
+
+            case STATE_CREATE_ACC_BAL:
+                int bal = parseValidAmount(numberPadInput);
+                if (bal >= 0) {
+                    newAccBalance = bal;
+                    numberPadInput = "";
+                    setState(STATE_CREATE_ACC_TYPE);
+                    message = "Balance Accepted";
+                    result = "Enter account type:\n1 = Standard\n2 = Student\n3 = Savings\n4 = Prime\nFollowed by \"Ent\"";
+                } else {
+                    message = "Invalid Amount";
+                    result = "Enter a valid opening balance\nFollowed by \"Ent\"";
+                }
+                break;
+
+            case STATE_CREATE_ACC_TYPE:
+                switch (numberPadInput) {
+                    case "1": newAccType = "standard"; break;
+                    case "2": newAccType = "student";  break;
+                    case "3": newAccType = "savings";  break;
+                    case "4": newAccType = "prime";    break;
+                    default:  newAccType = "";
+                }
+                numberPadInput = "";
+                if (!newAccType.isEmpty()) {
+                    boolean created = bank.addBankAccount(newAccType, newAccNumber, newAccPasswd, newAccBalance);
+                    if (created) {
+                        message = "Account Created!";
+                        result = "Type: " + newAccType + "\nNumber: " + newAccNumber + "\nBalance: £" + newAccBalance
+                                + "\n\nReturning to login...";
+                        setState(STATE_ACCOUNT_NO);
+                    } else {
+                        message = "Creation Failed";
+                        result = "Account number already exists\nor limit reached.\nReturning to welcome...";
+                        setState(STATE_WELCOME);
+                        update();
+                        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+                        delay.setOnFinished(event -> initialise());
+                        delay.play();
+                    }
+                } else {
+                    message = "Invalid Type";
+                    result = "Enter 1, 2, 3 or 4\nFollowed by \"Ent\"";
+                    setState(STATE_CREATE_ACC_TYPE);
                 }
                 break;
 
@@ -476,7 +557,7 @@ public class UIModel {
         result = "Thank you for using our ATM.";
         update();
         //Returns user to home automatically
-        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(5));
+        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1));
         delay.setOnFinished(event -> initialise());
         delay.play();
     }
@@ -511,6 +592,18 @@ public class UIModel {
                 break;
             case STATE_PW_CONFIRM:
                 result = "Re-enter NEW password to confirm, then Ent.";
+                break;
+            case STATE_CREATE_ACC_NO:
+                result = "Enter a 5-digit account number, then Ent.";
+                break;
+            case STATE_CREATE_ACC_PW:
+                result = "Enter a 5-digit password, then Ent.";
+                break;
+            case STATE_CREATE_ACC_BAL:
+                result = "Enter opening balance, then Ent.";
+                break;
+            case STATE_CREATE_ACC_TYPE:
+                result = "Press 1-4 to select account type, then Ent.";
                 break;
             default:
                 result = "Help unavailable.";
