@@ -8,7 +8,7 @@ package com.atmbanksimulator;
 public class BankAccount {
     private String accNumber = "";
     private String accPasswd ="";
-    private int balance = 0;
+    protected int balance = 0;
 
     public BankAccount() {}
     public BankAccount(String a, String p, int b) {
@@ -37,6 +37,11 @@ public class BankAccount {
             balance = balance + amount;  // add amount to balance
             return true;
         }
+    }
+    //Cleaner implementation for the PrimeAccount overdraft
+    protected boolean forceWithdraw(int amount) {
+        balance = balance - amount;
+        return true;
     }
 
     // Getter for the account balance

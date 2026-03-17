@@ -328,12 +328,15 @@ public class UIModel {
             numberPadInput = "";
 
             //Checks if the account is a SavingsAccount
-            if (current instanceof SavingsAccount && !interestApplied) {
-                ((SavingsAccount) current).addInterest();
-                interestApplied = true; //Flag to prevent balance spam resulting in infinite interest applied
-                message = "Interest applied";
-            } else {
-                message = "Balance available";
+            //Added protection to prevent user gaining additional interest by simply logging out and in.
+            if (current instanceof SavingsAccount) {
+                SavingsAccount sa = (SavingsAccount) current;
+                if (!sa.hasInterestBeenApplied()) {
+                    sa.addInterest();
+                    message = "Interest applied";
+                } else {
+                    message = "Balance available";
+                }
             }
             result = "Your balance is: £" + current.getBalance();
         } else {
