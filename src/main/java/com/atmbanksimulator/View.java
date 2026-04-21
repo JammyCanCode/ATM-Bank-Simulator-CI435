@@ -102,8 +102,14 @@ class View {
                 if ( text.length() >= 1 ) {
                     // non-empty string - make a button
                     Button btn = new Button( text );
+
+                    // set the tooltip for select buttons
+                    if ((getTooltip(text) != null)) {
+                        btn.setTooltip(new Tooltip(getTooltip(text)));
+                    }
+
                     btn.setOnAction( this::buttonClicked );
-                              // Register event handler: call buttonClicked() whenever this button is pressed
+                    // Register event handler: call buttonClicked() whenever this button is pressed
                     buttonPane.getChildren().add( btn );    // add this button to tiled pane
                 } else {
                     // empty string - make an empty Text element as a spacer
@@ -123,6 +129,29 @@ class View {
         window.setTitle("ATM-Bank Simulator"); //set window title
         window.show();
     }
+
+    private String getTooltip(String text) {
+        switch (text) {
+            // left side of buttons
+            case "Clr" : return "Clear input box";
+
+            // right side of buttons
+            // first row of right side
+            case "Dep" : return "Deposit entered amount";
+            case "W/D" : return "Withdraw entered amount";
+            case "Bal" : return "Display current balance";
+            case "Xfr" : return "Enter transfer state";
+
+            //second row of right side
+            case "Pwd" : return "Change password";
+            case " ? " : return "Help";
+            case "Fin" : return "Finish and sign out";
+            case "Ent" : return "Enter";
+
+            default: return null;
+        }
+    }
+
 
     // This is how the View talks to the Controller
     // This method is called when a button is pressed

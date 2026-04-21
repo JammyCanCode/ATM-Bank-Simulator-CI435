@@ -225,6 +225,10 @@ public class UIModel {
                         result = "Type: " + newAccType + "\nNumber: " + newAccNumber + "\nBalance: £" + newAccBalance
                                 + "\n\nReturning to login...";
                         setState(STATE_ACCOUNT_NO);
+                        update();
+                        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+                        delay.setOnFinished(event -> processLoginChoice());
+                        delay.play();
                     } else {
                         message = "Creation Failed";
                         result = "Account number already exists\nor limit reached.\nReturning to welcome...";
