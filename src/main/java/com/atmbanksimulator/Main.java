@@ -3,19 +3,19 @@ package com.atmbanksimulator;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-
-// 🧍Think of MVC like a human body:
-// - View is the face and senses: it shows things and receives input.
-// - Controller is the nerves: it carries signals to the brain and triggers actions.
-// - UIModel is the brain: it holds state and logic, and queries domain services.
-// - Bank / BankAccount are the real "money world" rules.
-// Together, they simulate how an ATM thinks, reacts, and handles money.
-
+/**
+ * The Main class serves as the entry point for the JavaFX application.
+ * It initializes the Bank, UIModel, View, and Controller, and links them together.
+ */
 public class Main extends Application {
     public static void main( String args[] ) {launch(args);}
 
+    /**
+     * Starts the JavaFX application by setting up the MVC components.
+     */
+    @Override
     public void start(Stage window) {
-        // Create a Bank object add two bank accounts for test
+        // Create a Bank object add bank accounts for test
         Bank bank = new Bank();
         bank.addBankAccount("10001", "11111", 100);
         bank.addBankAccount("10002", "22222", 50);

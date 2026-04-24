@@ -7,12 +7,12 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-
-// ===== 🙂 View (Eyes / Ears / Nose / Mouth / Face) =====
-
-// The View class creates the GUI for the application.
-// It does not know anything about business logic;
-// it only updates the display when notified by the UIModel.
+import java.awt.Toolkit;
+/**
+ * The View class creates and manages the graphical user interface for the ATM.
+ * It is responsible for displaying the current state of the UIModel and capturing user input.
+ * It follows the MVC pattern and does not contain business logic.
+ */
 class View {
     int H = 500;         // Height of window pixels
     int W = 500;         // Width  of window pixels
@@ -30,9 +30,16 @@ class View {
     private VBox goodbyeLayout; //Container for goodbye screen
     private StackPane root; // The container that stacks the welcome screen and ATM keypad
 
-    // start() is called from Main to set up the UI.
-    // Important: create controls here (not in the constructor or as field initializers),
-    // so that everything is initialized in the correct order.
+    /**
+     * Plays a system beep sound to provide interactive feedback.
+     */
+    private void playClickSound() {
+        Toolkit.getDefaultToolkit().beep();
+    }
+
+    /**
+     * Sets up and displays the JavaFX stage with all components.
+     */
     public void start(Stage window) {
         // Create the user interface component objects.
         // The ATM UI is organized as a vertical grid with four main parts:
@@ -55,8 +62,14 @@ class View {
         Button loginButton = new Button("Login to Account");
         Button createAccButton = new Button("Create Account");
 
-        loginButton.setOnAction((e) -> controller.process("LoginButton"));
-        createAccButton.setOnAction((e) -> controller.process("CreateAccButton"));
+        loginButton.setOnAction((e) -> {
+            playClickSound();
+            controller.process("LoginButton");
+        });
+        createAccButton.setOnAction((e) -> {
+            playClickSound();
+            controller.process("CreateAccButton");
+        });
 
         welcomeLayout.getChildren().addAll(welcomeLbl, loginButton, createAccButton);
 
@@ -65,7 +78,10 @@ class View {
         Label goodbyeLbl = new Label("Logged Out Successfully");
         Button returnBtn = new Button("Return to home");
 
-        returnBtn.setOnAction((e) -> controller.process("ReturnToWelcome"));
+        returnBtn.setOnAction((e) -> {
+            playClickSound();
+            controller.process("ReturnToWelcome");
+        });
 
         goodbyeLayout.getChildren().addAll(goodbyeLbl, returnBtn);
 
@@ -157,6 +173,9 @@ class View {
     // This method is called when a button is pressed
     // It fetches the label on the button and passes it to the controller's process method
     private void buttonClicked(ActionEvent event) {
+        // Play click sound
+        playClickSound();
+
         // this line asks the event to provide the actual Button object that was clicked
         Button b = ((Button) event.getSource());
         String text = b.getText();   // get the button label
@@ -164,11 +183,10 @@ class View {
         controller.process( text );  // Pass it to the controller's process method
     }
 
-    // This method is called by the UIModel whenever the UIModel changes.
-    // It receives updated information from the UIModel and displays them in the GUI.
-    // - msg → shown in the top message label
-    // - tfInputMsg → shown in the text field (user input area)
-    // - taResultMsg → shown in the text area (instructions / results)
+    /**
+     * Updates the GUI with new information from the UIModel.
+     * Toggles visibility of different layouts based on the message content.
+     */
     public void update(String msg,String tfInputMsg,String taResultMsg) {
 
         welcomeLayout.setVisible(false);

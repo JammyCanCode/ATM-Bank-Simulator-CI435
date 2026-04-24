@@ -1,24 +1,32 @@
 package com.atmbanksimulator;
 
-// ===== 📚🌐BankAccount (Domain / Service / Business Logic) =====
+/**
+ * Represents a basic bank account with an account number, password, and balance.
+ * Provides core functionalities such as deposit, withdrawal, and balance inquiries.
+ */
 
-// BankAccount class:
-// - Stores instance variables for account number, password, and balance
-// - Provides methods to withdraw, deposit, check balance, etc.
 public class BankAccount {
     private String accNumber = "";
     private String accPasswd ="";
     protected int balance = 0;
 
+    /**
+     * Default constructor for BankAccount.
+     */
     public BankAccount() {}
+
+    /**
+     * Constructs a BankAccount with specified details.
+     */
     public BankAccount(String a, String p, int b) {
         accNumber = a;
         accPasswd = p;
         balance = b;
     }
 
-    // Withdraw money from this account.
-    // Returns true if successful, or false if the amount is negative or exceeds the current balance.
+    /**
+     * Withdraws a specified amount from the account.
+     */
     public boolean withdraw( int amount ) {
         if (amount < 0 || balance < amount) {
             return false;
@@ -28,8 +36,9 @@ public class BankAccount {
         }
     }
 
-    // deposit the amount of money into this account.
-    // Return true if successful,or false if the amount is negative
+    /**
+     * Deposits a specified amount into the account.
+     */
     public boolean deposit( int amount ) {
         if (amount < 0) {
             return false;
@@ -38,28 +47,39 @@ public class BankAccount {
             return true;
         }
     }
-    //Cleaner implementation for the PrimeAccount overdraft
+
+    /**
+     * Forces a withdrawal without balance checks. Used by subclasses for special logic.
+     */
     protected boolean forceWithdraw(int amount) {
         balance = balance - amount;
         return true;
     }
 
-    // Getter for the account balance
-    // Returns the current balance of this account
+    /**
+     * Returns the current balance of the account.
+     */
     public int getBalance() {
         return balance;
     }
 
-    // Getter for the account number
+    /**
+     * Returns the account number.
+     */
     public String getAccNumber() {
         return accNumber;
     }
-    // Getter for the account password
+
+    /**
+     * Returns the account password.
+     */
     public String getaccPasswd() {
         return accPasswd;
     }
 
-    // ✅ Setter for password (needed for Change Password feature)
+    /**
+     * Sets a new password for the account.
+     */
     public void setAccPasswd(String newPasswd) {
         this.accPasswd = newPasswd;
     }

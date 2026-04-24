@@ -4,13 +4,19 @@ package com.atmbanksimulator;
 
 // The Controller receives user actions from the View and delegates the appropriate tasks to the UIModel.
 // Its main job is to decide what to do based on the user input.
+/**
+ * The Controller class receives user actions from the View and delegates the appropriate tasks to the UIModel.
+ * It acts as the intermediary in the MVC pattern, deciding how to respond to user input.
+ */
 public class Controller {
 
     UIModel UIModel; // Reference to the UIModel (part of the MVC setup)
 
-    // The process method is called by the View in response to user interface events.
-    // It uses a switch statement to determine which UIModel method should be called,
-    // and delegates the task accordingly.
+    /**
+     * Processes an action string received from the View.
+     * Uses a switch statement to delegate the action to the corresponding UIModel method.
+     * @param action The label of the button or action performed in the UI.
+     */
     void process( String action ) {
         switch (action) {
             case "LoginButton": //Button for user Login

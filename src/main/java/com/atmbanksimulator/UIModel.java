@@ -1,27 +1,16 @@
 package com.atmbanksimulator;
-
-// ===== 🧠 UIModel (Brain) =====
-
 import java.util.Objects;
 
-// The UIModel represents all the actual content and functionality of the app
-// For the ATM, it keeps track of the information shown in the display
-// (the laMsg and two tfInput boxes), and the interaction with the bank, executes
-// commands provided by the controller and tells the view to update when
-// something changes
+/**
+ * The UIModel represents the state and business logic of the ATM user interface.
+ * it keeps track of the information shown in the display, manages user input,
+ * and interacts with the Bank to perform transactions.
+ */
 public class UIModel {
     View view; // Reference to the View (part of the MVC setup)
     private Bank bank; // The ATM communicates with this Bank
 
-    // The ATM UIModel can be in one of three states:
-    // 1. Waiting for an account number
-    // 2. Waiting for a password
-    // 3. Logged in (ready to process requests for the logged-in account)
-    // We represent each state with a String constant.
-    // The 'final' keyword ensures these values cannot be changed.
-    // 4. Ensures interest is not applied to any account until the check has been performed.
-    // 5. Waiting for an amount of money to transfer to a selected account
-    // 6. New initial entry point for the application
+    // The ATM UIModel can be in one of many states represented by constants.
     private final String STATE_ACCOUNT_NO = "account_no";
     private final String STATE_PASSWORD = "password";
     private final String STATE_LOGGED_IN = "logged_in";
@@ -61,22 +50,27 @@ public class UIModel {
     private String numberPadInput;         // Current number displayed in the TextField (as a string)
     private String result;                 // Contents of the TextArea (may be multiple lines)
 
-    // UIModel constructor: pass a Bank object that the ATM interacts with
+    /**
+     * Constructs a UIModel with a reference to the Bank.
+     * @param bank The Bank object to interact with.
+     */
     public UIModel(Bank bank) {
         this.bank = bank;
     }
 
-    // Initialize the ATM UIModel: this method is called by Main when starting the app
-    // - Set state to STATE_ACCOUNT_NO - Changed 01/03/2026 to use new welcome page (STATE_WELCOME)
-    // - Clear the numberPadInput - numbers displayed in the TextField
-    // - Display the welcome message and user instructions
+    /**
+     * Initializes the UIModel to the welcome state and updates the view.
+     */
     public void initialise() {
         setState(STATE_WELCOME);
         message = "Welcome to the ATM";
         result = "Please select an option to begin.";
         update();
     }
-    //Handle the transition between the welcome screen and the login screen.
+
+    /**
+     * Transitions the UIModel to the login (account number entry) state.
+     */
     public void processLoginChoice() {
         setState(STATE_ACCOUNT_NO);
         numberPadInput = "";
@@ -85,6 +79,9 @@ public class UIModel {
         update();
     }
 
+    /**
+     * Transitions the UIModel to the account creation state.
+     */
     public void processCreateAccChoice() {
         setState(STATE_CREATE_ACC_NO);
         numberPadInput = "";
@@ -93,10 +90,9 @@ public class UIModel {
         update();
     }
 
-    // Reset the ATM UIModel after an invalid action or logout:
-    // - Set state to STATE_ACCOUNT_NO
-    // - Clear the numberPadInput
-    // - Display the provided message and user instructions
+    /**
+     * Resets the UIModel to the account number entry state with a specific message.
+     */
     private void reset(String msg) {
         setState(STATE_ACCOUNT_NO);
         numberPadInput = "";
@@ -104,7 +100,9 @@ public class UIModel {
         result = "Enter your account number\nFollowed by \"Ent\"";
     }
 
-    // Change the ATM state and print a debug message whenever the state changes
+    /**
+     * Updates the internal state and prints a debug message.
+     */
     private void setState(String newState)
     {
         if ( !state.equals(newState) )
@@ -115,10 +113,9 @@ public class UIModel {
         }
     }
 
-    // These process**** methods are called by the Controller
-    // in response to specific button presses on the GUI.
-
-    // Handle a number button press: append the digit to numberPadInput
+    /**
+     * Processes a number button press by appending the digit to the current input.
+     */
     public void processNumber(String numberOnButton) {
         // Optional extension:
         // Improve feedback by showing what the number is being entered for based on the current state.
@@ -128,7 +125,9 @@ public class UIModel {
         update();
     }
 
-    // Handle the Clear button: reset the current number stored in numberPadInput
+    /**
+     * Clears the current number pad input.
+     */
     public void processClear() {
         // Optional extension:
         // Improve feedback by showing what was cleared depending on the current state.
@@ -140,10 +139,9 @@ public class UIModel {
         }
     }
 
-    // Handle the Enter button.
-    // This is a more complex method: pressing Enter causes the ATM to change state,
-    // progressing from STATE_ACCOUNT_NO → STATE_PASSWORD → STATE_LOGGED_IN,
-    // and back to STATE_ACCOUNT_NO when logging out.
+    /**
+     * Handles the Enter button press, which processes the current input based on the state.
+     */
     public void processEnter()
     {
         // The action depends on the current ATM state
@@ -560,10 +558,6 @@ public class UIModel {
         message = "Goodbye";
         result = "Thank you for using our ATM.";
         update();
-        //Returns user to home automatically
-        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1));
-        delay.setOnFinished(event -> initialise());
-        delay.play();
     }
 
     // Handle unknown or invalid buttons for the current state:
