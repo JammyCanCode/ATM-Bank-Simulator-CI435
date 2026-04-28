@@ -15,7 +15,6 @@ public class Controller {
     /**
      * Processes an action string received from the View.
      * Uses a switch statement to delegate the action to the corresponding UIModel method.
-     * @param action The label of the button or action performed in the UI.
      */
     void process( String action ) {
         switch (action) {

@@ -9,7 +9,6 @@ import javafx.application.Application;
 public class Launcher {
     /**
      * Main method to launch the Main application class.
-     * @param args Command line arguments.
      */
     public static void main(String[] args) {
         Application.launch(Main.class, args);
